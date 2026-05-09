@@ -12,7 +12,7 @@ pub async fn fraud_score(
     (
         StatusCode::OK,
         Json(Response {
-            approved: response > 0.6,
+            approved: response < 0.6,
             fraud_score: response,
         }),
     )

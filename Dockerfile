@@ -7,12 +7,13 @@ COPY references.json ./
 COPY data ./data/
 RUN mkdir src
 RUN echo "fn main() {}" > src/main.rs \
-  # && echo "fn main() {}" > src/build_bin.rs \
-  && touch src/lib.rs && cargo build --release -j 1 \
+  && echo "fn main() {}" > src/build_bin.rs \
+  && touch src/lib.rs && cargo build --release -j 2 \
   && rm -rf src/
 
 COPY src ./src
-RUN touch src/main.rs && touch src/lib.rs && cargo build --release --bin main -j 1
+# had to use -j x because docker was stopping thec build because OOM on MacOS
+RUN touch src/main.rs && touch src/lib.rs && cargo build --release --bin main -j 2
 
 FROM --platform=linux/amd64 debian:bookworm-slim
 

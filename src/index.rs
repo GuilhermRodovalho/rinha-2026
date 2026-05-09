@@ -57,7 +57,7 @@ impl Index {
             }
         }
 
-        top.iter().filter(|&&(_, b)| b).count() as f32 / k as f32
+        (top.iter().filter(|&&(_, b)| b).count() as f32) / (k as f32)
     }
 }
 

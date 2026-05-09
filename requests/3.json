@@ -1,0 +1,32 @@
+{
+    "id": "tx-1841834722",
+    "transaction": {
+      "amount": 103.24,
+      "installments": 3,
+      "requested_at": "2026-03-10T08:38:14Z"
+    },
+    "customer": {
+      "avg_amount": 206.48,
+      "tx_count_24h": 5,
+      "known_merchants": [
+        "MERC-009",
+        "MERC-008",
+        "MERC-004",
+        "MERC-019"
+      ]
+    },
+    "merchant": {
+      "id": "MERC-019",
+      "mcc": "5411",
+      "avg_amount": 311.33
+    },
+    "terminal": {
+      "is_online": false,
+      "card_present": true,
+      "km_from_home": 25.8641717317
+    },
+    "last_transaction": {
+      "timestamp": "2026-03-09T23:20:14Z",
+      "km_from_current": 0.0444251811
+    }
+  }
