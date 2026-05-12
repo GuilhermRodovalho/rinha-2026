@@ -1,17 +1,17 @@
 use std::{
-    error::Error,
     io::{BufReader, Read},
     sync::Arc,
 };
 
 static INDEX_BYTES: &[u8] = include_bytes!("../data/raw_data.bin");
 
-pub struct Index {
-    vectors: Vec<[f32; 14]>,
-    labels: Vec<bool>,
+#[derive(Debug)]
+pub struct VectorsData {
+    pub vectors: Vec<[f32; 14]>,
+    pub labels: Vec<bool>,
 }
 
-impl Index {
+impl VectorsData {
     pub fn load() -> Arc<Self> {
         let bytes = INDEX_BYTES;
 
@@ -42,7 +42,7 @@ impl Index {
             labels.push(is_fraud);
         }
 
-        Arc::new(Index { vectors, labels })
+        Arc::new(VectorsData { vectors, labels })
     }
 
     pub fn knn_fraud_ratio(&self, query: &[f32; 14], k: usize) -> f32 {
@@ -61,7 +61,7 @@ impl Index {
     }
 }
 
-fn l2_distance(q: &[f32; 14], v: &[f32; 14]) -> f32 {
+pub fn l2_distance(q: &[f32; 14], v: &[f32; 14]) -> f32 {
     let mut s = 0f32;
     for i in 0..14 {
         let d = q[i] - v[i];

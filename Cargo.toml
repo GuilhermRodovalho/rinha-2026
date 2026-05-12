@@ -11,6 +11,10 @@ path = "./src/main.rs"
 name = "build_bin"
 path = "./src/build_bin.rs"
 
+[[bin]]
+name = "build_index"
+path = "./src/build_index.rs"
+
 [lib]
 path = "src/lib.rs"
 
@@ -21,6 +25,7 @@ serde_json = "1.0"
 tokio = { version = "1.52.2", features = ["full"] }
 time = { version = "0.3", features = [ "serde", "serde-well-known", "formatting", "parsing", "macros"] }
 config = "0.15.22"
+rand = "0.10"
 
 
 [dev-dependencies]
