@@ -15,8 +15,7 @@ services:
           memory: "10MB"
 
   api1:
-    build: .
-    image: rinha-api
+    image: ghcr.io/guilhermrodovalho/rinha-2026:latest
     platform: linux/amd64
     environment:
       PORT: "3000"
@@ -27,8 +26,7 @@ services:
           memory: "170MB"
 
   api2:
-    build: .
-    image: rinha-api
+    image: ghcr.io/guilhermrodovalho/rinha-2026:latest
     platform: linux/amd64
     environment:
       PORT: "3000"
