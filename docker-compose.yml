@@ -24,7 +24,7 @@ services:
       resources:
         limits:
           cpus: "0.45"
-          memory: "500MB" # voltar para 170
+          memory: "170MB"
 
   api2:
     build: .
@@ -38,4 +38,4 @@ services:
       resources:
         limits:
           cpus: "0.45"
-          memory: "500MB" # voltar para 170
+          memory: "170MB"

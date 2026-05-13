@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     api::routes::{fraud_score, health},
-    index::VectorsData,
+    index::Index,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -68,7 +68,7 @@ pub struct Response {
 
 #[derive(Clone)]
 pub struct AppState {
-    pub index: Arc<VectorsData>,
+    pub index: Arc<Index>,
 }
 
 pub fn get_app(index: AppState) -> Router {

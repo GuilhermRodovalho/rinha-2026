@@ -1,6 +1,11 @@
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+};
+
+use flate2::{Compression, write::GzEncoder};
 use rand::seq::IndexedRandom;
 use rinha::index::{VectorsData, l2_distance};
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 const K: usize = 1024;
 
@@ -9,26 +14,49 @@ const K: usize = 1024;
 pub fn main() {
     let data = VectorsData::load();
     let mut centroids = initialize_centroids(&data);
+    let mut assignments = Vec::new();
 
-    println!("building index: {} vectors, K={K}", data.vectors.len());
+    let n = data.vectors.len();
+    let n_threads = std::thread::available_parallelism()
+        .map(|x| x.get())
+        .unwrap_or(4);
+    println!("building index: {n} vectors, K={K}, threads={n_threads}");
 
     for iter in 0..20 {
-        let mut clusters: Vec<Vec<_>> = vec![Vec::new(); K];
-
-        for point in data.vectors.iter() {
-            let mut closest_index = 0;
-            let mut min_distance = l2_distance(point, &centroids[0]);
-            // ckippy said it was better than a simple for. Ok then
-            for (j, centroid) in centroids.iter().enumerate().skip(1) {
-                let distance = l2_distance(point, centroid);
-                if distance < min_distance {
-                    min_distance = distance;
-                    closest_index = j;
-                }
+        // assign em paralelo: cada thread calcula o centróide mais próximo para seu chunk
+        assignments = vec![0u16; n];
+        let chunk = (n + n_threads - 1) / n_threads;
+        let centroids_ref = &centroids;
+        std::thread::scope(|s| {
+            for (v_chunk, a_chunk) in data
+                .vectors
+                .chunks(chunk)
+                .zip(assignments.chunks_mut(chunk))
+            {
+                s.spawn(move || {
+                    for (v, a) in v_chunk.iter().zip(a_chunk.iter_mut()) {
+                        let mut closest_index = 0u16;
+                        let mut min_distance = l2_distance(v, &centroids_ref[0]);
+                        for (j, centroid) in centroids_ref.iter().enumerate().skip(1) {
+                            let distance = l2_distance(v, centroid);
+                            if distance < min_distance {
+                                min_distance = distance;
+                                closest_index = j as u16;
+                            }
+                        }
+                        *a = closest_index;
+                    }
+                });
             }
+        });
 
-            clusters[closest_index].push(point);
+        println!("mouting clusters");
+        // monta clusters a partir dos assignments (single-threaded, rápido)
+        let mut clusters: Vec<Vec<&[f32; 14]>> = vec![Vec::new(); K];
+        for (point, &a) in data.vectors.iter().zip(assignments.iter()) {
+            clusters[a as usize].push(point);
         }
+
         let mut new_centroids = Vec::new();
         for (i, cluster) in clusters.iter().enumerate() {
             let new_centroid = calculate_centroid(cluster, &centroids[i]);
@@ -38,6 +66,8 @@ pub fn main() {
         centroids = new_centroids;
         println!("  iter {}/20 done", iter + 1);
     }
+
+    write_data_to_file(&data, &centroids, &assignments);
 
     println!("done.");
 }
@@ -66,4 +96,53 @@ fn calculate_centroid(vs: &Vec<&[f32; 14]>, fallback: &[f32; 14]) -> [f32; 14] {
     }
 
     res
+}
+
+fn write_data_to_file(data: &VectorsData, centroids: &[[f32; 14]], assignments: &[u16]) {
+    let file = File::create("data/index.bin.gz").expect("Failed to create index file");
+    let writer = BufWriter::new(file);
+    let mut writer = GzEncoder::new(writer, Compression::best());
+
+    writer.write_all(b"rivf").unwrap(); // magic
+    let mut clusters_indices = vec![Vec::new(); K];
+    for (i, &a) in assignments.iter().enumerate() {
+        clusters_indices[a as usize].push(i);
+    }
+    let mut offsets = vec![0u32; K + 1];
+    for i in 0..K {
+        offsets[i + 1] = offsets[i] + clusters_indices[i].len() as u32;
+    }
+
+    writer
+        .write_all(&(data.vectors.len() as u32).to_le_bytes())
+        .unwrap();
+    writer.write_all(&(K as u32).to_le_bytes()).unwrap();
+    writer.write_all(&14u32.to_le_bytes()).unwrap();
+    for c in centroids {
+        for &x in c.iter() {
+            writer.write_all(&x.to_le_bytes()).unwrap();
+        }
+    }
+
+    for o in &offsets {
+        writer.write_all(&o.to_le_bytes()).unwrap();
+    }
+
+    for indices in &clusters_indices {
+        for &vi in indices {
+            for &x in data.vectors[vi].iter() {
+                writer.write_all(&x.to_le_bytes()).unwrap();
+            }
+        }
+    }
+
+    for indices in &clusters_indices {
+        for &vi in indices {
+            writer.write_all(&[data.labels[vi] as u8]).unwrap();
+        }
+    }
+
+    writer.flush().unwrap();
+    writer.finish().unwrap();
+    println!("index writter on data/index.bin.gz");
 }

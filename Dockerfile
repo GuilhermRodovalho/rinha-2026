@@ -8,6 +8,7 @@ COPY data ./data/
 RUN mkdir src
 RUN echo "fn main() {}" > src/main.rs \
   && echo "fn main() {}" > src/build_bin.rs \
+  && echo "fn main() {}" > src/build_index.rs \
   && touch src/lib.rs && cargo build --release -j 2 \
   && rm -rf src/
 
