@@ -74,6 +74,6 @@ pub struct AppState {
 pub fn get_app(index: AppState) -> Router {
     Router::new()
         .route("/ready", get(health))
-        .route("/fraud_score", post(fraud_score))
+        .route("/fraud-score", post(fraud_score))
         .with_state(index)
 }
