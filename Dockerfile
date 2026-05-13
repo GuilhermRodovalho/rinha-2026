@@ -2,7 +2,6 @@ FROM --platform=linux/amd64 rust:1.94-slim AS builder
 
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
-COPY references.json ./
 
 COPY data ./data/
 RUN mkdir src

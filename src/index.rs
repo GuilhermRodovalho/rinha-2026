@@ -118,7 +118,12 @@ impl Index {
         }
 
         println!("IVF index loaded: n={n}, k={k}");
-        Arc::new(Index { centroids, offsets, vectors, labels })
+        Arc::new(Index {
+            centroids,
+            offsets,
+            vectors,
+            labels,
+        })
     }
 
     pub fn knn_fraud_ratio(&self, query: &[f32; 14], k: usize) -> f32 {
