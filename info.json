@@ -1,0 +1,7 @@
+{
+    "participants": ["Guilherme Rodovalho"],
+    "social": ["https://github.com/GuilhermRodovalho", "https://www.linkedin.com/in/guilherme-rodrigues-rodovalho/"],
+    "source-code-repo": "https://github.com/GuilhermRodovalho/rinha-2026",
+    "stack": ["rust", "axum", "tokio", "nginx"],
+    "open_to_work": true
+}
