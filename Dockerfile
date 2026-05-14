@@ -21,6 +21,5 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 
 WORKDIR /app
 COPY --from=builder /app/target/release/main /usr/local/bin/main
-COPY configuration.yml ./
 
 CMD ["main"]
