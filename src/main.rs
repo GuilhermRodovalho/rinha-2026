@@ -1,6 +1,5 @@
 use rinha::{
     api::{AppState, get_app},
-    configuration::get_configuration,
     index::Index,
 };
 
@@ -20,8 +19,6 @@ async fn run_server() {
 
 #[tokio::main(worker_threads = 2)]
 async fn main() {
-    let _configuration = get_configuration().expect("Error getting configuration");
-
     println!("starting server");
     run_server().await;
 }

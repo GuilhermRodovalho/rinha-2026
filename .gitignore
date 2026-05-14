@@ -1,3 +1,4 @@
 /target
 data/raw_data.bin
 references.json
+data/index.bin.gz

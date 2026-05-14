@@ -42,7 +42,7 @@ fn main() {
 }
 
 fn load_data() -> (Vec<[f32; 14]>, Vec<u8>) {
-    let file = fs::File::open("references.json").expect("couldn't find file references.json");
+    let file = fs::File::open("data/references.json").expect("couldn't find file references.json");
     let reader = BufReader::new(file);
     let mut deserializer = serde_json::Deserializer::from_reader(reader);
 
