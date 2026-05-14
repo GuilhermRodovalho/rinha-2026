@@ -6,8 +6,7 @@ use std::{
 use flate2::read::GzDecoder;
 
 // ── raw data loader — usado apenas pelo build_index ──────────────────────────
-
-static RAW_BYTES: &[u8] = include_bytes!("../data/raw_data.bin");
+// Lê do filesystem em vez de include_bytes! para não embutir 163MB no binário do servidor.
 
 #[derive(Debug)]
 pub struct VectorsData {
@@ -17,9 +16,10 @@ pub struct VectorsData {
 
 impl VectorsData {
     pub fn load() -> Arc<Self> {
-        let bytes = RAW_BYTES;
+        let bytes = std::fs::read("data/raw_data.bin")
+            .expect("data/raw_data.bin not found — run from project root");
 
-        let mut reader = BufReader::new(bytes);
+        let mut reader = BufReader::new(bytes.as_slice());
         let mut magic = [0; 9];
         reader.read_exact(&mut magic).unwrap();
         if &magic != b"rinha2026" {
