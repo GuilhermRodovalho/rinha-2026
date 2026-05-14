@@ -18,7 +18,7 @@ async fn run_server() {
     axum::serve(listener, app).await.unwrap();
 }
 
-#[tokio::main]
+#[tokio::main(worker_threads = 2)]
 async fn main() {
     let _configuration = get_configuration().expect("Error getting configuration");
 

@@ -10,7 +10,10 @@ pub async fn fraud_score(
 ) -> impl IntoResponse {
     let start = Instant::now();
     let vector = input.vectorize();
-    let response = state.index.knn_fraud_ratio(&vector, 5);
+    let index = state.index.clone();
+    let response = tokio::task::spawn_blocking(move || index.knn_fraud_ratio(&vector, 5))
+        .await
+        .unwrap();
     println!("[{}] {}ms", input.id, start.elapsed().as_millis());
 
     (
