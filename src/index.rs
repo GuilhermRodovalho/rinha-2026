@@ -136,33 +136,43 @@ impl Index {
         }
     }
 
-    fn scan(&self, query: &[f32; 14], k: usize, nprobe: usize) -> (usize, usize) {
+    fn scan(&self, query: &[f32; 14], _k: usize, nprobe: usize) -> (usize, usize) {
+        // Seleção parcial O(K) — só garante que os nprobe menores estão em [..nprobe],
+        // sem ordenar o resto. Substitui sort O(K log K).
         let mut dists: Vec<(f32, usize)> = self
             .centroids
             .iter()
             .enumerate()
             .map(|(i, c)| (l2_distance(query, c), i))
             .collect();
-        dists.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        let nprobe = nprobe.min(dists.len());
+        dists.select_nth_unstable_by(nprobe - 1, |a, b| a.0.partial_cmp(&b.0).unwrap());
 
-        let mut top: Vec<(f32, u8)> = Vec::with_capacity(k + 1);
+        // Top-k na stack: sem alocação heap, k é sempre 5 na prática.
+        let mut top = [(f32::MAX, 0u8); 5];
+        let mut worst = f32::MAX;
 
-        for &(_, ci) in dists.iter().take(nprobe) {
+        for &(_, ci) in &dists[..nprobe] {
             let start = self.offsets[ci] as usize;
             let end = self.offsets[ci + 1] as usize;
             for vi in start..end {
                 let dist = l2_distance_i16(query, &self.vectors[vi]);
-                let worst = top.last().map(|x| x.0).unwrap_or(f32::MAX);
-                if top.len() < k || dist < worst {
-                    top.push((dist, self.labels[vi]));
-                    top.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-                    top.truncate(k);
+                if dist < worst {
+                    let max_pos = top
+                        .iter()
+                        .enumerate()
+                        .max_by(|(_, a), (_, b)| a.0.partial_cmp(&b.0).unwrap())
+                        .unwrap()
+                        .0;
+                    top[max_pos] = (dist, self.labels[vi]);
+                    worst = top.iter().map(|x| x.0).fold(f32::MIN, f32::max);
                 }
             }
         }
 
-        let fraud_count = top.iter().filter(|&&(_, l)| l != 0).count();
-        (fraud_count, top.len())
+        let total = top.iter().filter(|&&(d, _)| d < f32::MAX).count();
+        let fraud_count = top[..total].iter().filter(|&&(_, l)| l != 0).count();
+        (fraud_count, total)
     }
 }
 

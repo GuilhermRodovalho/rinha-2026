@@ -7,7 +7,9 @@ use flate2::{Compression, write::GzEncoder};
 use rand::seq::IndexedRandom;
 use rinha::index::{VectorsData, l2_distance};
 
-const K: usize = 1024;
+const K: usize = 2048;
+const MAX_ITERS: usize = 20;
+const CONVERGENCE_EPS: f32 = 1e-4;
 
 /// this function build the index doing K Means clustering
 /// it should write the index to a binart compressed file.
@@ -22,7 +24,7 @@ pub fn main() {
         .unwrap_or(4);
     println!("building index: {n} vectors, K={K}, threads={n_threads}");
 
-    for iter in 0..20 {
+    for iter in 0..MAX_ITERS {
         // assign em paralelo: cada thread calcula o centróide mais próximo para seu chunk
         assignments = vec![0u16; n];
         let chunk = (n + n_threads - 1) / n_threads;
@@ -50,21 +52,32 @@ pub fn main() {
             }
         });
 
-        println!("mouting clusters");
         // monta clusters a partir dos assignments (single-threaded, rápido)
         let mut clusters: Vec<Vec<&[f32; 14]>> = vec![Vec::new(); K];
         for (point, &a) in data.vectors.iter().zip(assignments.iter()) {
             clusters[a as usize].push(point);
         }
 
+        let old_centroids = centroids.clone();
         let mut new_centroids = Vec::new();
         for (i, cluster) in clusters.iter().enumerate() {
-            let new_centroid = calculate_centroid(cluster, &centroids[i]);
+            let new_centroid = calculate_centroid(cluster, &old_centroids[i]);
             new_centroids.push(new_centroid);
         }
-
         centroids = new_centroids;
-        println!("  iter {}/20 done", iter + 1);
+
+        let max_movement = centroids
+            .iter()
+            .zip(old_centroids.iter())
+            .map(|(new, old)| l2_distance(new, old).sqrt())
+            .fold(0.0f32, f32::max);
+
+        println!("  iter {}/{MAX_ITERS} done (max movement: {max_movement:.6})", iter + 1);
+
+        if max_movement < CONVERGENCE_EPS {
+            println!("  converged early at iter {}", iter + 1);
+            break;
+        }
     }
 
     write_data_to_file(&data, &centroids, &assignments);
